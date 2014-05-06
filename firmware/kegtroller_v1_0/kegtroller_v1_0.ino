@@ -30,18 +30,13 @@ SoftwareSerial wifiSerial(4,5);
 #define PIN_LED_GREEN 11
 #define PIN_BUTTON 12
 
-#define BUTTON_DURATION 30000
-#define POUR_DURATION 30000
 
 
 WiFly wifly;
 
+/* Create a file named config.h...you can start with config.h.example */
+#include "Config.h"
 
-/* Change these to match your WiFi network */
-const char mySSID[] = "";
-const char myPassword[] = "";
-
-const char site[] = "beer.machadolab.com";
 
 void terminal();
 
@@ -99,21 +94,27 @@ void setup()
   /* Join wifi network if not already associated */
   if (!wifly.isAssociated()) {
     /* Setup the WiFly to connect to a wifi network */
-    Serial.println("Joining network");
-    wifly.setSSID(mySSID);
-    wifly.setPassphrase(myPassword);
+    Serial.print("Joining network");
+    Serial.println(WIFI_SSID);
+
+    wifly.setSSID(WIFI_SSID);
+    wifly.setPassphrase(WIFI_PASSWORD);
     wifly.enableDHCP();
 
     if (wifly.join()) {
-      Serial.println("Joined wifi network");
+      Serial.print("Joined wifi network ");
+      Serial.println(WIFI_SSID);
     } 
     else {
-      Serial.println("Failed to join wifi network");
+      Serial.print("Failed to join wifi network ");
+      Serial.println(WIFI_SSID);
       terminal();
     }
   } 
   else {
-    Serial.println("Already joined network");
+    Serial.print("Already joined network ");
+    Serial.println(WIFI_SSID);
+
   }
 
   wifly.setDeviceID("Wifly-WebClient");
@@ -269,7 +270,7 @@ boolean authorizePour(char *id)
   Serial.println(temperature);
   char buf[48];
   snprintf(buf, 47, "/access.php?a=auth&id=%s&t=%d", id, int(temperature));
-  int result = webRequest(site, buf);
+  int result = webRequest(API_HOST, buf);
   Serial.print("Got web result ");
   Serial.println(result);
 
@@ -290,14 +291,14 @@ int webRequest(const char *host, char *url)
 
   if (wifly.open(host, 80)) {
     Serial.print("Connected to ");
-    Serial.println(site);
+    Serial.println(host);
 
     /* Send the request */
     wifly.print("GET ");
     wifly.print(url);
     wifly.println(" HTTP/1.1");
     wifly.print("Host: ");
-    wifly.println(site);
+    wifly.println(host);
     wifly.println();
 
     char prevChar = 0;

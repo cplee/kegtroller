@@ -1,0 +1,9 @@
+
+#define BUTTON_DURATION 30000
+#define POUR_DURATION 30000
+
+/* Change these to match your WiFi network */
+#define WIFI_SSID "my_ssid"
+#define WIFI_PASSWORD "my_password
+
+#define API_HOST "beer.machadolab.com"
