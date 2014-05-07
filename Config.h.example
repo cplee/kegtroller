@@ -7,3 +7,5 @@
 #define WIFI_PASSWORD "my_password
 
 #define API_HOST "beer.machadolab.com"
+#define API_PORT 80
+#define API_PATH "/api/authorization?wait=true"

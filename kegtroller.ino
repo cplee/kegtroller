@@ -94,7 +94,7 @@ void setup()
   /* Join wifi network if not already associated */
   if (!wifly.isAssociated()) {
     /* Setup the WiFly to connect to a wifi network */
-    Serial.print("Joining network");
+    Serial.print("Joining network ");
     Serial.println(WIFI_SSID);
 
     wifly.setSSID(WIFI_SSID);
@@ -120,7 +120,7 @@ void setup()
   wifly.setDeviceID("Wifly-WebClient");
 
   digitalWrite(PIN_LED_RED, HIGH);
- 
+
   Serial.println("Ready!");
 
 }
@@ -128,17 +128,17 @@ void setup()
 void loop()
 {
   switch(state) {
-    case waiting_for_payment:
-       loop_waiting_for_payment();
-       break;
-    case waiting_for_button:
-       loop_waiting_for_button();
-       break;
-    case pouring:
-       loop_pouring();
-       break;
+  case waiting_for_payment:
+    loop_waiting_for_payment();
+    break;
+  case waiting_for_button:
+    loop_waiting_for_button();
+    break;
+  case pouring:
+    loop_pouring();
+    break;
   }
-  
+
   // update LEDs
   check_led(&GREEN);
   check_led(&YELLOW);
@@ -148,13 +148,14 @@ void loop()
 void loop_waiting_for_payment() {
   if (check_for_payment()) {
     Serial.println("Pour has been authorized!");
-    
+
     state = waiting_for_button;
     button_timeout = millis() + BUTTON_DURATION;
     set_led(&RED,LOW);
     start_blinking(&YELLOW,BUTTON_DURATION);
     set_led(&GREEN,LOW);
-  } else {
+  } 
+  else {
     // locked
     set_led(&RED,HIGH);
     set_led(&YELLOW,LOW);
@@ -171,7 +172,8 @@ void loop_waiting_for_button() {
     start_blinking(&GREEN,POUR_DURATION);
     state = pouring;
     pour_timeout = millis() + POUR_DURATION;
-  } else if(millis() > button_timeout) {
+  } 
+  else if(millis() > button_timeout) {
     state = waiting_for_payment;
     Serial.println("Timout waiting for button.");
   }
@@ -186,7 +188,8 @@ void loop_pouring() {
     digitalWrite(PIN_VALVE, LOW);
     state = waiting_for_payment;
     Serial.println("Pour is finished.");
-  } else {
+  } 
+  else {
     digitalWrite(PIN_VALVE, HIGH);
   }
 }
@@ -197,52 +200,48 @@ boolean check_for_button_release() {
     if(digitalRead(PIN_BUTTON) == LOW) {
       waiting_for_release = false;
       return true;
-    } else {
+    } 
+    else {
       return false;
     }
-  } else {
+  } 
+  else {
     waiting_for_release = (digitalRead(PIN_BUTTON) == HIGH);
     return false;
   }
 }
 
 boolean check_for_payment() {
-  return check_for_button_release();
-    /*
-    if (authorizePour(cardId))
-     {
-     
-     digitalWrite(PIN_LED_YELLOW, LOW);
-     digitalWrite(PIN_LED_GREEN, HIGH);
-     
-     Serial.println("Auth successful - waiting for button");
-     boolean pourDone = false;
-     while (!pourDone)
-     {
-     if (digitalRead(PIN_BUTTON) == HIGH)
-     {
-     unsigned long nowMillis = millis();
-     digitalWrite(PIN_LED_RED, HIGH);
-     digitalWrite(PIN_LED_YELLOW, HIGH);
-     digitalWrite(PIN_LED_GREEN, HIGH);
-     	  Serial.println("Opening valve");
-     digitalWrite(PIN_VALVE, HIGH);
-     delay(POUR_DURATION);
-     	  Serial.println("Closing valve");
-     digitalWrite(PIN_VALVE, LOW);
-     pourDone = true;
-     }
-     }
-     }
-     else
-     {
-     
-     digitalWrite(PIN_LED_YELLOW, LOW);
-     digitalWrite(PIN_LED_RED, HIGH);
-     
-     Serial.println("Auth failed - no beer for you");
-     }
-     */
+  if (!wifly.isConnected()) {
+    Serial.println("Creating connection");
+    if (wifly.open(API_HOST, API_PORT)) {
+      Serial.print("Connected to ");
+      Serial.print(API_HOST);
+      Serial.print(":");
+      Serial.println(API_PORT);
+
+
+      /* Send the request */
+      wifly.print("GET ");
+      wifly.print(API_PATH);
+      wifly.println(" HTTP/1.1");
+      wifly.print("Host: ");
+      wifly.println(API_HOST);
+      wifly.println();
+    } else {
+      Serial.println("Failed to connect");
+      return false;
+    }
+  }
+  
+  // check for resp
+  if (wifly.available() > 0)
+  {
+      Serial.println("Got a response!");
+      wifly.close();
+      return true;
+  } 
+
 }
 
 /* Connect the WiFly serial to the serial monitor. */
@@ -262,112 +261,10 @@ void terminal()
 }
 
 
-boolean authorizePour(char *id)
-{
-
-  float temperature = readTemperature();
-  Serial.print("Temperature is ");
-  Serial.println(temperature);
-  char buf[48];
-  snprintf(buf, 47, "/access.php?a=auth&id=%s&t=%d", id, int(temperature));
-  int result = webRequest(API_HOST, buf);
-  Serial.print("Got web result ");
-  Serial.println(result);
-
-  if (result >= 200 && result <= 299)
-    return true;
-  else
-    return false;
-}
 
 
-int webRequest(const char *host, char *url)
-{
-
-  if (wifly.isConnected()) {
-    Serial.println("Old connection active. Closing");
-    wifly.close();
-  }
-
-  if (wifly.open(host, 80)) {
-    Serial.print("Connected to ");
-    Serial.println(host);
-
-    /* Send the request */
-    wifly.print("GET ");
-    wifly.print(url);
-    wifly.println(" HTTP/1.1");
-    wifly.print("Host: ");
-    wifly.println(host);
-    wifly.println();
-
-    char prevChar = 0;
-    char curChar = 0;
-    char respCode[4] = "99";
-    boolean inCode = false;
-    boolean haveCode = false;
-    int i = 0;
-
-    while(!haveCode) 
-    {
-      if (wifly.available() > 0)
-      {
-        prevChar = curChar;
-        curChar = wifly.read();
-        if (curChar == ' ')
-        {
-          if (inCode)
-          {
-            inCode = false;
-            haveCode = true;
-            respCode[i] = '\0';
-          }
-          else
-          {
-            inCode = true;
-          }
-        }
-        else if (inCode)
-        {
-          if (i <= 3)
-            respCode[i++] = curChar; 
-        }
-        else if (curChar == '\r')
-        {
-          haveCode = true;
-        }
-      }
-    }
-    wifly.close();
-    return atoi(respCode);
-  } 
-  else {
-    Serial.println("Failed to connect");
-    return 1;
-  }
-  return 2; 
-}
 
 
-float readTemperature()
-{
-
-  int tempReading = analogRead(PIN_TEMP);
-  Serial.print("tempReading - ");
-  Serial.println(tempReading);
-
-  // converting that reading to voltage, which is based off the reference voltage
-  float voltage = tempReading * aref_voltage;
-  voltage /= 1024.0; 
-
-  // now print out the temperature
-  float temperatureC = (voltage - 0.5) * 100 ;  //converting from 10 mv per degree wit 500 mV offset
-  //to degrees ((volatge - 500mV) times 100) 
-  // now convert to Fahrenheight
-  float temperatureF = (temperatureC * 9.0 / 5.0) + 32.0;
-
-  return temperatureF;  
-}
 
 
 
