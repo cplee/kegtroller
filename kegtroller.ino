@@ -228,18 +228,60 @@ boolean check_for_payment() {
       wifly.print("Host: ");
       wifly.println(API_HOST);
       wifly.println();
-    } else {
+    } 
+    else {
       Serial.println("Failed to connect");
       return false;
     }
   }
-  
+
   // check for resp
   if (wifly.available() > 0)
   {
-      Serial.println("Got a response!");
-      wifly.close();
-      return true;
+     char prevChar = 0;
+        char curChar = 0;
+        char respCode[4] = "99";
+        boolean inCode = false;
+        boolean haveCode = false;
+        int i = 0;
+        
+        while(!haveCode) 
+        {
+          if (wifly.available() > 0)
+          {
+            prevChar = curChar;
+            curChar = wifly.read();
+            if (curChar == ' ')
+            {
+              if (inCode)
+              {
+                inCode = false;
+                haveCode = true;
+                respCode[i] = '\0';
+              }
+              else
+              {
+                inCode = true;
+              }
+            }
+            else if (inCode)
+            {
+                if (i <= 3)
+                  respCode[i++] = curChar; 
+            }
+            else if (curChar == '\r')
+            {
+               haveCode = true;
+            }
+          }
+        }
+        
+    wifly.close();
+    int code = atoi(respCode);
+    Serial.print ("Got response: ");
+    Serial.println(code);
+
+    return (code==200);
   } 
 
 }
@@ -250,7 +292,7 @@ void terminal()
   Serial.println("Terminal started:");
   while (1) {
     if (wifly.available() > 0) {
-      Serial.write(wifly.read());
+      Serial.write((char)wifly.read());
     }
 
 
@@ -259,6 +301,7 @@ void terminal()
     }
   }
 }
+
 
 
 
