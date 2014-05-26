@@ -120,7 +120,7 @@ void setup()
   wifly.setDeviceID("Wifly-WebClient");
 
   digitalWrite(PIN_LED_RED, HIGH);
-
+  wifly.close();
   Serial.println("Ready!");
 
 }
