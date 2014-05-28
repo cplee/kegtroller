@@ -1,6 +1,9 @@
 
 #define BUTTON_DURATION 30000
 #define POUR_DURATION 30000
+#
+##define OVERRIDE_DURATION 5000
+##define OVERRIDE_TIMEOUT 10000
 
 /* Change these to match your WiFi network */
 #define WIFI_SSID "my_ssid"

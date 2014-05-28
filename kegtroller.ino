@@ -131,6 +131,9 @@ void loop()
   case waiting_for_payment:
     loop_waiting_for_payment();
     break;
+  case waiting_for_override:
+    loop_waiting_for_override();
+    break;
   case waiting_for_button:
     loop_waiting_for_button();
     break;
@@ -145,6 +148,30 @@ void loop()
   check_led(&RED);
 }
 
+void loop_waiting_for_override() {
+    unsigned long currentMillis = millis();
+    unsigned long releaseTimeMillis = RED.begin_time + OVERRIDE_DURATION;
+    int wiggle = 250;
+    
+    if(currentMillis > releaseTimeMillis + wiggle) {
+        set_led(&RED,HIGH);
+        stop_blinking(&RED);
+        state=waiting_for_payment;
+    } else if(digitalRead(PIN_BUTTON) == LOW) {
+      if(currentMillis >= (releaseTimeMillis - wiggle)) {
+            set_led(&RED,LOW);
+            set_led(&YELLOW,LOW);
+            start_blinking(&GREEN,POUR_DURATION);
+            state = pouring;
+            pour_timeout = millis() + POUR_DURATION;
+      } else {
+        set_led(&RED,HIGH);
+        stop_blinking(&RED);
+        state=waiting_for_payment;
+      }
+    }  
+}
+
 void loop_waiting_for_payment() {
   if (check_for_payment()) {
     Serial.println("Pour has been authorized!");
@@ -154,8 +181,10 @@ void loop_waiting_for_payment() {
     set_led(&RED,LOW);
     start_blinking(&YELLOW,BUTTON_DURATION);
     set_led(&GREEN,LOW);
-  } 
-  else {
+  } else if (digitalRead(PIN_BUTTON) == HIGH) {
+    start_blinking(&RED, OVERRIDE_TIMEOUT);
+    state=waiting_for_override;
+  } else {
     // locked
     set_led(&RED,HIGH);
     set_led(&YELLOW,LOW);
