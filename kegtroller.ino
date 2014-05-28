@@ -157,6 +157,8 @@ void loop_waiting_for_override() {
         set_led(&RED,HIGH);
         stop_blinking(&RED);
         state=waiting_for_payment;
+        Serial.println("Timout waiting for override release.");
+
     } else if(digitalRead(PIN_BUTTON) == LOW) {
       if(currentMillis >= (releaseTimeMillis - wiggle)) {
             set_led(&RED,LOW);
@@ -168,6 +170,8 @@ void loop_waiting_for_override() {
         set_led(&RED,HIGH);
         stop_blinking(&RED);
         state=waiting_for_payment;
+        
+        Serial.println("Too early for override release.");
       }
     }  
 }
